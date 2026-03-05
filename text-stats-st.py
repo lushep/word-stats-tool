@@ -74,8 +74,8 @@ if analyse and text.strip():
     para_count         = len([p for p in text.split('\n\n') if p.strip()])
     sentence_count     = len(re.findall(r'[.!?]+', text))
     reading_mins       = word_count / 238
-    write_academic_hrs = word_count / 150
-    write_general_hrs  = word_count / 250
+    write_academic_hrs = word_count / 200
+    write_general_hrs  = word_count / 500
 
     def fmt_hours(hrs):
         if hrs < 1/60:
