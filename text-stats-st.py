@@ -2,18 +2,18 @@ import streamlit as st
 from collections import Counter
 import re
 
-# page config
+# ── PAGE CONFIG ───────────────────────────────────────────
 st.set_page_config(
     page_title="Text Stats",
     page_icon="📊",
     layout="centered",
 )
 
-# load css
+# ── LOAD CSS ──────────────────────────────────────────────
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# constants
+# ── CONSTANTS ─────────────────────────────────────────────
 STOP_WORDS = {
     'the','a','an','and','or','but','in','on','at','to','for','of','with',
     'as','is','was','are','were','be','been','being','it','its','this','that',
@@ -49,6 +49,7 @@ with st.sidebar:
     st.markdown("<p class='edit-note'>Comma-separated list</p>", unsafe_allow_html=True)
     woi_input = st.text_area("", value=DEFAULT_WORDS_OF_INTEREST, height=120, label_visibility="collapsed")
     words_of_interest = [w.strip() for w in woi_input.split(',') if w.strip()]
+    case_sensitive = st.toggle("Case sensitive", value=False, help="On: 'Loss' and 'loss' count separately. Off: both count together.")
 
 # ── TEXT INPUT ────────────────────────────────────────────
 text = st.text_area(
@@ -66,22 +67,42 @@ if analyse and text.strip():
     words_list = clean.split()
 
     # Basic counts
-    word_count      = len(text.split())
-    char_total      = len(text)
-    char_no_spaces  = len(text.replace(' ', '').replace('\n', ''))
-    space_count     = text.count(' ')
-    para_count      = len([p for p in text.split('\n\n') if p.strip()])
-    sentence_count  = len(re.findall(r'[.!?]+', text))
-    reading_mins    = word_count / 238
+    word_count         = len(text.split())
+    char_total         = len(text)
+    char_no_spaces     = len(text.replace(' ', '').replace('\n', ''))
+    space_count        = text.count(' ')
+    para_count         = len([p for p in text.split('\n\n') if p.strip()])
+    sentence_count     = len(re.findall(r'[.!?]+', text))
+    reading_mins       = word_count / 238
+    write_academic_hrs = word_count / 150
+    write_general_hrs  = word_count / 250
 
-    # ── BASIC COUNTS ──
-    st.markdown("<div class='section-header'>📝 Basic Counts</div>", unsafe_allow_html=True)
+    def fmt_hours(hrs):
+        if hrs < 1/60:
+            return "under a minute"
+        elif hrs < 1:
+            return f"~{hrs * 60:.0f} mins"
+        else:
+            return f"~{hrs:.1f} hrs"
+
+    # ── TIMINGS ──
+    st.markdown("<div class='section-header'>⏱️ Timings </div>", unsafe_allow_html=True)
 
     if reading_mins < 1:
         reading_str = "Under 1 min read"
     else:
         reading_str = f"~{reading_mins:.1f} min read"
-    st.markdown(f"<div class='reading-badge'>{reading_str}</div>", unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div style='display:flex;gap:10px;flex-wrap:wrap;margin:0.5rem 0 1.5rem 0'>
+        <div class='reading-badge'>📖 {reading_str}</div>
+        <div class='reading-badge' style='background:#4a3520'>✍️ Academic &nbsp;{fmt_hours(write_academic_hrs)}</div>
+        <div class='reading-badge' style='background:#6b5030'>✍️ General &nbsp;{fmt_hours(write_general_hrs)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── BASIC COUNTS ──
+    st.markdown("<div class='section-header'>📊 Key Stats </div>", unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class='stat-grid'>
@@ -116,9 +137,10 @@ if analyse and text.strip():
     # ── WORDS OF INTEREST ──
     st.markdown("<div class='section-header'>🔍 Words of Interest</div>", unsafe_allow_html=True)
 
+    flags = 0 if case_sensitive else re.IGNORECASE
     woi_html = ""
     for w in words_of_interest:
-        count = len(re.findall(rf'\b{re.escape(w)}\b', text, re.IGNORECASE))
+        count = len(re.findall(rf'\b{re.escape(w)}\b', text, flags))
         count_class = "woi-count-found" if count > 0 else "woi-count-zero"
         woi_html += f"""
         <div class='woi-row'>
